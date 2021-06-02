@@ -1,7 +1,7 @@
 ---
-title: "SFE_Flows_ocean_indices_wavelets"
+title: "SFE_Flows_wavelets"
 author: "Denise Colombano"
-date: "12/10/2020"
+date: "06/02/2021"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -26,7 +26,7 @@ library(WaveletComp)
 ## Dayflow time-series
 Dayflow data and documentation on CNRA website
 https://data.cnra.ca.gov/dataset/dayflow
-For Bay Study sites: OUT=Net delta outflow, RIO=Rio Vista, WEST=The San Joaquin basin west at confluence 
+OUT=Net delta outflow, RIO=Rio Vista, WEST=The San Joaquin basin west at confluence 
 
 Plot original time-series
 ```{r}
