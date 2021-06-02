@@ -1,0 +1,131 @@
+---
+title: "SFE_Flows_ocean_indices_wavelets"
+author: "Denise Colombano"
+date: "12/10/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# data wrangling
+library(tidyverse)
+library(ggthemes)
+
+# spectral analysis
+library(discharge)
+library(WaveletComp)
+```
+
+
+# Import data
+## Dayflow time-series
+Dayflow data and documentation on CNRA website
+https://data.cnra.ca.gov/dataset/dayflow
+For Bay Study sites: OUT=Net delta outflow, RIO=Rio Vista, WEST=The San Joaquin basin west at confluence 
+
+Plot original time-series
+```{r}
+# Import original file
+dayflow <- read_csv("Data/Dayflow/Dayflow_RIO_WEST_OUT_1995-2020_Wavelet.csv") %>% 
+  filter(OUT>0)
+
+## time series plots
+dayflow_f <- dayflow %>% 
+  #filter(Year>1979) %>%  # 1980-2018 for visualizations
+  mutate(OUT_cms=OUT*0.028) %>% 
+  mutate(OUT_cms=log(OUT_cms))
+dayflow_f$Date <- lubridate::mdy(dayflow_f$Date)
+summary(dayflow_f)
+
+dayflow_plot <- ggplot(dayflow_f, aes(Date, OUT))+ 
+  geom_line()+
+  #geom_point(pch=21, size=0.5)+
+  theme_bw()+
+  labs(subtitle="Daily outflow", x="", y="CFS")
+dayflow_plot
+
+dayflow_plot <- ggplot(dayflow_f, aes(Date, OUT_cms))+ 
+  geom_line()+
+  theme_bw()+
+  labs(subtitle="Mean daily outflow", x="", y="log(cms)")+
+  scale_x_date()
+dayflow_plot
+
+x <- dayflow_f$Date
+y <- dayflow_f$OUT_cms
+
+plot(x, y, type = "l", lty = 1, xlab="Year", ylab="log cms")
+```
+
+
+
+# Wavelet analysis
+
+## Dayflow wavelet
+
+```{r}
+dayflow_w <- dayflow_f %>% 
+  select(Date, OUT) %>% 
+  rename(date=Date)
+
+# Plot wavelet--using consistent intervals of wavelet power
+?analyze.wavelet # see arguments
+my.w <- analyze.wavelet(dayflow_w, "OUT",
+                        loess.span = 0,
+                        dt = 1, # this is the time resolution, here 1 sample per day
+                        make.pval = TRUE, n.sim = 10, # number of simulations
+                        date.format = "%Y-%m-%d") 
+str(my.w)
+# Plot wavelet--using consistent intervals of wavelet power
+wt.image(my.w, color.key = "interval", n.levels = 250,
+         legend.params = list(lab = "wavelet power levels", mar = 4.7))
+# This will spread out the color palette across wavelet power quantiles
+wt.image(my.w, color.key = "quantile", n.levels = 250, main = "Daily outflow 1928-2020", periodlab = "Frequency",
+         legend.params = list(lab = "Wavelet power level", mar = 6.5, lab.line = 4, label.digits=4), label.time.axis = TRUE, show.date=TRUE, timelab = "Date")
+?wt.image # See more visualization options
+```
+
+
+### extra code
+```{r}
+# Code chunk 12.2 - Reconstruct the time series
+reconstruct(my.w, plot.waves = FALSE, lwd = c(1,2),
+            legend.coords = "bottomleft", ylim = c(-1.8, 1.8))
+```
+
+
+# noise color
+```{r}
+library(dataRetrieval)
+library(ggplot2)
+library(zoo)
+
+# Now remove linear trend & periodic seasonal component
+getrandom_stl<-function(x){
+  tx<-ts(x,frequency=365.25)
+  yyy<-(stl(tx,s.window="periodic",t.window = length(x)))$time.series[,3]
+  return(yyy)
+}
+randomflow<-getrandom_stl(dayflow_f$OUT)
+acf(unclass(randomflow),lag.max=365) # unit of the lag (x-axis) is in years
+acf(dayflow_f$OUT,lag.max=365) # unit of the lag is in days
+# Get slope of log(frequency) and log(power)
+cal_noise<-function(x){
+  x=na.approx(x)
+  cutoff=c(0,1)
+  data=spectrum(x,log='no',plot=FALSE)
+  ind0=floor(length(data$spec)*cutoff)
+  regfit=lm(log10(data$spec)~log10(data$freq))
+  slope=summary(regfit)$coefficients[2,1]
+  pval=summary(regfit)$coefficients[2,4]
+  return(c(slope,pval))
+}
+# Noise color (Beta coefficient)
+cal_noise(randomflow)[1]*(-1)
+```
+
