@@ -31,7 +31,7 @@ OUT=Net delta outflow, RIO=Rio Vista, WEST=The San Joaquin basin west at conflue
 Plot original time-series
 ```{r}
 # Import original file
-dayflow <- read_csv("Data/Dayflow/Dayflow_RIO_WEST_OUT_1995-2020_Wavelet.csv") %>% 
+dayflow <- read_csv("Data/Dayflow/Dayflow_RIO_WEST_OUT_1928-2020_Wavelet.csv") %>% 
   filter(OUT>0)
 
 ## time series plots
