@@ -36,7 +36,6 @@ dayflow <- read_csv("Data/Dayflow/Dayflow_RIO_WEST_OUT_1995-2020_Wavelet.csv") %
 
 ## time series plots
 dayflow_f <- dayflow %>% 
-  #filter(Year>1979) %>%  # 1980-2018 for visualizations
   mutate(OUT_cms=OUT*0.028) %>% 
   mutate(OUT_cms=log(OUT_cms))
 dayflow_f$Date <- lubridate::mdy(dayflow_f$Date)
