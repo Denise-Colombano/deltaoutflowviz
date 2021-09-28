@@ -1,4 +1,5 @@
 library(tidyverse)
+library(ggpubr)
 
 #Collect mean temperature for january and july
 july_temp<- read.csv(file="https://www.ncdc.noaa.gov/cag/statewide/time-series/4-tavg-1-7-1895-2021.csv",skip=3, header=T)
@@ -27,7 +28,6 @@ average_january_temp_1901_2000<-mean(january_temp_1901_2000$Temperature_celsius)
 july_temp_1901_2000<-combined_temp %>% filter(Year>1900&Year<=2000&Month=="July") %>% select(Temperature_celsius)
 average_july_temp_1901_2000<-mean(july_temp_1901_2000$Temperature_celsius)
 
-
 temperature_plot<-ggplot() + 
   geom_line(data=combined_temp,aes(x=Year,y = Temperature_celsius, color=Month)) +
   geom_point(data=combined_temp,aes(x=Year,y = Temperature_celsius, color=Month))+
@@ -41,10 +41,57 @@ temperature_plot<-ggplot() +
   
 temperature_plot
 
-tiff(filename="Temperature_Time_Series.tiff", 
-     units="in", bg="white", height=6, width=10, res=600, pointsize=6.8, 
+#January plot
+temperature_plot_january <-ggplot() + 
+  geom_ribbon(data=combined_january_max_min,aes(x=Year,ymin=min_temp_c,ymax=max_temp_c),fill="grey",alpha=0.6)+
+  geom_smooth(data=combined_temp[combined_temp$Month=="January",],aes(x=Year,y = Temperature_celsius),method="loess",span=0.25,color="red")+
+  geom_line(data=combined_temp[combined_temp$Month=="January",],aes(x=Year,y = Temperature_celsius)) +
+  geom_point(data=combined_temp[combined_temp$Month=="January",],aes(x=Year,y = Temperature_celsius))+
+  geom_hline(yintercept=average_january_temp_1901_2000, color="black",linetype=2, size=1)+
+  scale_x_continuous(breaks=c(seq(1890,2020,by=10))) +
+  labs(title="A) January",y=expression(""~degree * C *""))+
+  theme(panel.background = element_rect(fill="white",colour = "black",
+                                    size = 0.5, linetype = 'solid'),
+        panel.grid.major = element_line(size = 0.5, linetype = 3,
+                                    colour = "black"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 3,
+                                    colour = "white"),
+        axis.text.x=element_text(size=9, color="black"), 
+        axis.text.y = element_text(size=9, color="black"), 
+        axis.title.x = element_blank(), 
+        axis.title.y = element_text(size = 11, angle = 90)
+  )
+
+temperature_plot_january
+
+#July plot
+temperature_plot_july <-ggplot() + 
+  geom_ribbon(data=combined_july_max_min,aes(x=Year,ymin=min_temp_c,ymax=max_temp_c),fill="grey",alpha=0.6)+
+  geom_smooth(data=combined_temp[combined_temp$Month=="July",],aes(x=Year,y = Temperature_celsius),method="loess",span=0.25,color="red")+
+  geom_line(data=combined_temp[combined_temp$Month=="July",],aes(x=Year,y = Temperature_celsius)) +
+  geom_point(data=combined_temp[combined_temp$Month=="July",],aes(x=Year,y = Temperature_celsius))+
+  geom_hline(yintercept=average_july_temp_1901_2000, color="black",linetype=2, size=1)+
+  scale_x_continuous(breaks=c(seq(1890,2020,by=10))) +
+  labs(title="B) July",y=expression(""~degree * C *""))+
+  theme(panel.background = element_rect(fill="white",colour = "black",
+                                        size = 0.5, linetype = 'solid'),
+        panel.grid.major = element_line(size = 0.5, linetype = 3,
+                                        colour = "black"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 3,
+                                        colour = "white"),
+        axis.text.x=element_text(size=9, color="black"), 
+        axis.text.y = element_text(size=9, color="black"), 
+        axis.title.x = element_blank(), 
+        axis.title.y = element_text(size = 11, angle = 90)
+  )
+
+temperature_plot_july
+
+#Print plot
+tiff(filename="Temperature_Time_Series_January_July.tiff", 
+     units="in", bg="white", height=10, width=8, res=600, pointsize=6.8, 
      compression="lzw")
-temperature_plot
+ggarrange(temperature_plot_january,temperature_plot_july, ncol=1, nrow=2)
 dev.off()
 
 
